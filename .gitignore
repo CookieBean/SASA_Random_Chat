@@ -1,0 +1,4 @@
+# Project exclude paths
+/venv/
+/apikey_sasa.py
+/random-chat-sasa-firebase-adminsdk-vnq8o-123e95c3a8.json

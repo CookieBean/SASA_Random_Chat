@@ -92,6 +92,9 @@ class person:
 
     def sign_up(self):  # person의 기초적 signup 메서드 (유저 생성 및 데이터베이스 저장)
         try:
+            if self.__email[-10:] != "sasa.hs.kr":
+                messagebox.showerror("Error", "This Email is not SASA email. Please enter another email.")
+                return False
             user = auth.create_user(
                 email=self.__email,
                 email_verified=False,
@@ -121,7 +124,7 @@ class person:
             print(a)
             self.__user = auth.get_user_by_email(self.__email)
             if not self.__user.email_verified:
-                messagebox.showerror("Email was not verified! Please verify your Email first!")
+                messagebox.showerror("Error", "Email was not verified! Please verify your Email first!")
                 return False
             self.update_value()
             return True

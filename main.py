@@ -319,17 +319,17 @@ class LoginPage(tk.Frame):  # tk.Frame객체를 상속받은 LoginPage객체
         self.grade = tk.Entry(self, width=20)  # 학년 입력
         self.grade.pack()
 
+        label5 = tk.Label(self, text="SASA Email", bg='#3E4149', fg="#FFFFFF")
+        label5.pack(pady=20, padx=20)
+
+        self.email = tk.Entry(self, width=20)  # 이메일 입력
+        self.email.pack()
+
         label4 = tk.Label(self, text="Password", bg='#3E4149', fg="#FFFFFF")
         label4.pack(pady=20, padx=20)
 
-        self.pw = tk.Entry(self, width=20)  # 비밀번호 입력
+        self.pw = tk.Entry(self, width=20, show='*')  # 비밀번호 입력
         self.pw.pack()
-
-        label5 = tk.Label(self, text="SASA Email(Sign up)", bg='#3E4149', fg="#FFFFFF")
-        label5.pack(pady=20, padx=20)
-
-        self.email = tk.Entry(self, width=20)  # 비밀번호 입력
-        self.email.pack()
 
         label6 = tk.Label(self, text="Teacher Password(Optional)", bg='#3E4149', fg="#FFFFFF")
         label6.pack(pady=20, padx=20)
@@ -536,9 +536,11 @@ class ChatPage(tk.Frame):  # tk.Frame객체를 상속한 ChatPage
             lambda x: self.stream_handler(x, account=account))  # 스트림 핸들러 (데이터베이스에서 바뀐 값을 실시간으로 감지)
 
         scrollbar = tk.Scrollbar(self, orient="vertical")
+        scrollbar.pack(side=tk.LEFT, fill=tk.Y)
         self.listNodes = tk.Listbox(self, width=100, height=20, yscrollcommand=scrollbar.set, font=Font)  # 채팅 리스트
-        self.listNodes.configure(exportselection=False)
+        self.listNodes.configure(exportselection=False, yscrollcommand=scrollbar.set)
         self.listNodes.pack(padx=10, pady=10)
+        scrollbar.configure(command=self.listNodes.yview)
         chat_list = db.child("chat").child(roomname).child("messages").get()  # 초기 채팅 데이터 가져오기
         try:
             for i in chat_list.each():
@@ -558,6 +560,7 @@ class ChatPage(tk.Frame):  # tk.Frame객체를 상속한 ChatPage
 
         self.chat = tk.Entry(self, width=100, font=Font)  # 대화 입력기
         self.chat.pack()
+        self.chat.bind("<Return>", lambda x: self.send_chat(account, roomname))
 
         button1 = tk.Button(self, text="Send",
                             command=lambda: self.send_chat(account, roomname), highlightbackground='#3E4149')  # 전송버튼
@@ -595,22 +598,26 @@ class ChatPage(tk.Frame):  # tk.Frame객체를 상속한 ChatPage
                 self.listNodes.insert(self.listNodes.size(),
                                       "Anonymous" + " / " + message['date'] + "-->> " + message['message'])
                 print(message['from'] + " / " + message['date'] + "-->> " + message['message'])
+            self.listNodes.selection_clear(0, tk.END)
+            self.listNodes.select_set(tk.END)
+            self.listNodes.yview(tk.END)
         except Exception as e:  # 예외처리
             print("Not Yet")
             print(e)
 
     def send_chat(self, account, roomname):  # 채팅 전송 메서드
-        cnt = db.child("chat").child(roomname).get().val()['chat_count']
-        m = unicodedata.normalize('NFC', self.chat.get())
-        db.child("chat").child(roomname).child("messages").child(cnt).set({"number": cnt,
-                                                                           "data": {
-                                                                               "date": datetime.datetime.now().strftime(
-                                                                                   '%Y-%m-%d %H:%M:%S'),
-                                                                               "from": account.get_user().uid,
-                                                                               "message": m}})  # 대화 객체 (Dictionary Type) 데이터베이스에 저장
-        cnt += 1
-        db.child("chat").child(roomname).update({"chat_count": cnt})  # 대화 카운트 증가
-        self.chat.delete(0, "end")  # 입력칸 비우기
+        if self.chat.get() != "":
+            cnt = db.child("chat").child(roomname).get().val()['chat_count']
+            m = unicodedata.normalize('NFC', self.chat.get())
+            db.child("chat").child(roomname).child("messages").child(cnt).set({"number": cnt,
+                                                                               "data": {
+                                                                                   "date": datetime.datetime.now().strftime(
+                                                                                       '%Y-%m-%d %H:%M:%S'),
+                                                                                   "from": account.get_user().uid,
+                                                                                   "message": m}})  # 대화 객체 (Dictionary Type) 데이터베이스에 저장
+            cnt += 1
+            db.child("chat").child(roomname).update({"chat_count": cnt})  # 대화 카운트 증가
+            self.chat.delete(0, "end")  # 입력칸 비우기
 
     def go_back_action(self, controller, account, roomname):  # 뒤로가기 메서드
         exist_ = db.child("chat").child(roomname).get().val()['exist_']

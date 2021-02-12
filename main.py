@@ -671,7 +671,7 @@ class ChatPage(tk.Frame):  # tk.Frame객체를 상속한 ChatPage
                                                                             "date": datetime.datetime.now().strftime(
                                                                                 '%Y-%m-%d %H:%M:%S'),
                                                                             "from": "public",
-                                                                            "message": "Opponent goes out."}})
+                                                                            "message": "----- Opponent goes out -----"}})
         cnt += 1
         if exist_ == 2:  # 내가 상대보다 먼저 나가면
             exist_ -= 1

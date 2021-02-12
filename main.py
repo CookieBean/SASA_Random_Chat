@@ -353,45 +353,47 @@ class LoginPage(tk.Frame):  # tk.Frame객체를 상속받은 LoginPage객체
         if server_state == "false":
             messagebox.showinfo("Info", "The Server is closed.\nContact to developers for detail.")
             return
-        tpw = self.tpw.get()
-        if tpw == "SASA_":  # 관리자 유효 검사
-            account = teacher(self.name.get())
         else:
-            account = student(self.name.get(), self.grade.get())
-        account.set_email(self.email.get())
-        password = hashlib.md5(self.pw.get().encode('utf-8')).hexdigest()
-        if not account.set_passwd(password):  # 비밀번호 유효성 검사
-            messagebox.showerror("Error", "PassWord must be longer than 8")
-        else:
-            flag = account.sign_up()
-            if flag:  # 가입 성공 여부
-                print("Successfully Registered!")
-                messagebox.showinfo("Info", "Successfully Registered!\nNow verify your email and  Login Please")
-            else:  # 예외처리
-                messagebox.showerror("Error", "Cannot Signup! Report this issue to Developer to fix it.")
+            tpw = self.tpw.get()
+            if tpw == "SASA_":  # 관리자 유효 검사
+                account = teacher(self.name.get())
+            else:
+                account = student(self.name.get(), self.grade.get())
+            account.set_email(self.email.get())
+            password = hashlib.md5(self.pw.get().encode('utf-8')).hexdigest()
+            if not account.set_passwd(password):  # 비밀번호 유효성 검사
+                messagebox.showerror("Error", "PassWord must be longer than 8")
+            else:
+                flag = account.sign_up()
+                if flag:  # 가입 성공 여부
+                    print("Successfully Registered!")
+                    messagebox.showinfo("Info", "Successfully Registered!\nNow verify your email and  Login Please")
+                else:  # 예외처리
+                    messagebox.showerror("Error", "Cannot Signup! Report this issue to Developer to fix it.")
 
     def signin_action(self, controller):  # 로그인 Method
         server_state = db.child('server_state').get().val()['state']
         if server_state == "false":
             messagebox.showinfo("Info", "The Server is closed.\nContact to developers for detail.")
             return
-        tpw = self.tpw.get()
-        if tpw == "SASA_":  # 관리자 유효 검사
-            account = teacher(self.name.get())
         else:
-            account = student(self.name.get(), self.grade.get())
-        account.set_email(self.email.get())
-        password = hashlib.md5(self.pw.get().encode('utf-8')).hexdigest()
-        if not account.set_passwd(password):  # 비밀번호 유효성 검사
-            messagebox.showerror("Error", "Password must be longer than 8")
-        else:
-            flag = account.sign_in()
-            if flag:  # 로그인 성공 여부
-                print("going to listpage")
-                controller.ListPage_frame_init(account)
-                controller.show_frame(ListPage)
-            else:  # 예외처리
-                messagebox.showerror("Error", "Cannot Signin! Check your id or password again!")
+            tpw = self.tpw.get()
+            if tpw == "SASA_":  # 관리자 유효 검사
+                account = teacher(self.name.get())
+            else:
+                account = student(self.name.get(), self.grade.get())
+            account.set_email(self.email.get())
+            password = hashlib.md5(self.pw.get().encode('utf-8')).hexdigest()
+            if not account.set_passwd(password):  # 비밀번호 유효성 검사
+                messagebox.showerror("Error", "Password must be longer than 8")
+            else:
+                flag = account.sign_in()
+                if flag:  # 로그인 성공 여부
+                    print("going to listpage")
+                    controller.ListPage_frame_init(account)
+                    controller.show_frame(ListPage)
+                else:  # 예외처리
+                    messagebox.showerror("Error", "Cannot Signin! Check your id or password again!")
 
 
 class ListPage(tk.Frame):  # tk.Frame객체를 상속한 ListPage객체
@@ -662,7 +664,15 @@ class ChatPage(tk.Frame):  # tk.Frame객체를 상속한 ChatPage
             self.chat.delete(0, "end")  # 입력칸 비우기
 
     def go_back_action(self, controller, account, roomname):  # 뒤로가기 메서드
+        cnt = db.child("chat").child(roomname).get().val()['chat_count']
         exist_ = db.child("chat").child(roomname).get().val()['exist_']
+        db.child("chat").child(roomname).child("messages").child(cnt).set({"number": cnt,
+                                                                        "data": {
+                                                                            "date": datetime.datetime.now().strftime(
+                                                                                '%Y-%m-%d %H:%M:%S'),
+                                                                            "from": "public",
+                                                                            "message": "Opponent goes out."}})
+        cnt += 1
         if exist_ == 2:  # 내가 상대보다 먼저 나가면
             exist_ -= 1
             db.child("chat").child(roomname).update({"exist_": exist_})  # 남은 사람 수 1 감소

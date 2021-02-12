@@ -349,6 +349,10 @@ class LoginPage(tk.Frame):  # tk.Frame객체를 상속받은 LoginPage객체
         button2.pack()
 
     def signup_action(self, controller):  # 가입 Method
+        server_state = db.child('server_state').get().val()['state']
+        if server_state == "false":
+            messagebox.showinfo("Info", "The Server is closed.\nContact to developers for detail.")
+            return
         tpw = self.tpw.get()
         if tpw == "SASA_":  # 관리자 유효 검사
             account = teacher(self.name.get())
@@ -367,6 +371,10 @@ class LoginPage(tk.Frame):  # tk.Frame객체를 상속받은 LoginPage객체
                 messagebox.showerror("Error", "Cannot Signup! Report this issue to Developer to fix it.")
 
     def signin_action(self, controller):  # 로그인 Method
+        server_state = db.child('server_state').get().val()['state']
+        if server_state == "false":
+            messagebox.showinfo("Info", "The Server is closed.\nContact to developers for detail.")
+            return
         tpw = self.tpw.get()
         if tpw == "SASA_":  # 관리자 유효 검사
             account = teacher(self.name.get())
@@ -375,7 +383,7 @@ class LoginPage(tk.Frame):  # tk.Frame객체를 상속받은 LoginPage객체
         account.set_email(self.email.get())
         password = hashlib.md5(self.pw.get().encode('utf-8')).hexdigest()
         if not account.set_passwd(password):  # 비밀번호 유효성 검사
-            messagebox.showerror("Error", "PassWord must be longer than 8")
+            messagebox.showerror("Error", "Password must be longer than 8")
         else:
             flag = account.sign_in()
             if flag:  # 로그인 성공 여부
@@ -423,6 +431,10 @@ class ListPage(tk.Frame):  # tk.Frame객체를 상속한 ListPage객체
                             highlightbackground='#3E4149')  # 방 참가 버튼
         button2.pack()
 
+
+        server_stream = db.child('server_state').stream(
+            lambda x: self.server_stream_handler(x, account, controller))  # 스트림 핸들러 (데이터베이스에서 바뀐 값을 실시간으로 감지)
+
         try:
             account.get_ban_cnt()
             button4 = tk.Button(self, text="Manage Requests",
@@ -431,6 +443,15 @@ class ListPage(tk.Frame):  # tk.Frame객체를 상속한 ListPage객체
             button4.pack()
         except:  # 예외처리 (관리자 아님)
             pass
+
+    def server_stream_handler(self, message, account, controller):
+        try:
+            print(message)
+            if message['data'] == "false":
+                messagebox.showinfo("Info", "The Server is Closed.\nGoing back to LoginPage(Automatically Logout)")
+                self.logout_action(controller)
+        except Exception as e:
+            print(e)
 
     def go_profile_action(self, controller, account):  # ProfilePage 이동 메서드
         controller.ProfilePage_frame_init(account)
@@ -544,6 +565,9 @@ class ChatPage(tk.Frame):  # tk.Frame객체를 상속한 ChatPage
         my_stream = db.child('chat').child(roomname).child("messages").stream(
             lambda x: self.stream_handler(x, account=account))  # 스트림 핸들러 (데이터베이스에서 바뀐 값을 실시간으로 감지)
 
+        server_stream = db.child('server_state').stream(
+            lambda x: self.server_stream_handler(x, account, controller, roomname))  # 스트림 핸들러 (데이터베이스에서 바뀐 값을 실시간으로 감지)
+
         scrollbar = tk.Scrollbar(self, orient="vertical")
         scrollbar.pack(side="left", fill=tk.Y)
         self.listNodes = tk.Listbox(self, width=100, height=20, yscrollcommand=scrollbar.set, font=Font)  # 채팅 리스트
@@ -586,6 +610,15 @@ class ChatPage(tk.Frame):  # tk.Frame객체를 상속한 ChatPage
                                                  "target": target})  # request에는 신고 대상자와 신고자 uid 목록이 저장됨
         context = DB.child("chat").child(roomname).child("messages").get()  # 채팅 데이터 가져오기
         DB.child("ban_req").child(roomname).set(context.val())  # 신고목록에 채팅데이터 저장
+
+    def server_stream_handler(self, message, account, controller, roomname):
+        try:
+            print(message)
+            if message['data'] == "false":
+                messagebox.showinfo("Info", "The Server is Closed.\nGoing back to LoginPage(Automatically Logout)")
+                self.go_back_action(controller, account, roomname)
+        except Exception as e:
+            print(e)
 
     def stream_handler(self, message, account):  # 스트림 핸들러 - 이벤트 발생시 호출
         print("handled")
@@ -660,6 +693,9 @@ class ManagePage(tk.Frame):  # tk.Frame을 상속한 ManagePage객체
         frame1.configure(bg='#3E4149')
         frame1.pack(fill=tk.BOTH)
 
+        server_stream = db.child('server_state').stream(
+            lambda x: self.server_stream_handler(x, account, controller))  # 스트림 핸들러 (데이터베이스에서 바뀐 값을 실시간으로 감지)
+
         scrollbar = tk.Scrollbar(self, orient="vertical")
         self.listNodes = tk.Listbox(frame1, width=30, height=30, yscrollcommand=scrollbar.set)  # 신고 목록 리스트 박스
         self.listNodes.pack(side=tk.LEFT, padx=10, pady=10)
@@ -692,6 +728,15 @@ class ManagePage(tk.Frame):  # tk.Frame을 상속한 ManagePage객체
             self.refresh_list()
             self.Chat.delete(0, tk.END)
             messagebox.showinfo("Info", "Successfully Banned \n " + target)
+
+    def server_stream_handler(self, message, account, controller):
+        try:
+            print(message)
+            if message['data'] == "false":
+                messagebox.showinfo("Info", "The Server is Closed.\nGoing back to LoginPage(Automatically Logout)")
+                self.go_action(controller, account)
+        except Exception as e:
+            print(e)
 
     def refresh_list(self):  # 리스트 새로고침 메서드
         room_list = db.child("request").get()
@@ -753,6 +798,9 @@ class ProfilePage(tk.Frame):  # tk.Frame객체를 상속한 ProfilePage객체
         self.pw = tk.Entry(self, width=20)  # 비밀번호 입력
         self.pw.pack()
 
+        server_stream = db.child('server_state').stream(
+            lambda x: self.server_stream_handler(x, account, controller))  # 스트림 핸들러 (데이터베이스에서 바뀐 값을 실시간으로 감지)
+
         PW = tk.Button(self, text="Change PW",
                        command=lambda: self.pw_change(account), highlightbackground='#3E4149')  # 비밀번호 바꾸기 버튼
         PW.pack()
@@ -761,6 +809,15 @@ class ProfilePage(tk.Frame):  # tk.Frame객체를 상속한 ProfilePage객체
                            command=lambda: self.go_back_action(controller, account),
                            highlightbackground='#3E4149')  # 뒤로가기 버튼
         button.pack()
+
+    def server_stream_handler(self, message, account, controller):
+        try:
+            print(message)
+            if message['data'] == "false":
+                messagebox.showinfo("Info", "The Server is Closed.\nGoing back to LoginPage(Automatically Logout)")
+                self.go_back_action(controller, account)
+        except Exception as e:
+            print(e)
 
     def go_back_action(self, controller, account):  # 뒤로가기 메서드
         controller.ListPage_frame_init(account)

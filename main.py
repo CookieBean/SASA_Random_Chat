@@ -12,6 +12,9 @@ import json
 import unicodedata
 import requests
 import apikey_sasa as API
+import hashlib
+
+encoder = hashlib.md5()
 
 cred = credentials.Certificate("random-chat-sasa-firebase-adminsdk-vnq8o-123e95c3a8.json")
 
@@ -352,7 +355,8 @@ class LoginPage(tk.Frame):  # tk.Frame객체를 상속받은 LoginPage객체
         else:
             account = student(self.name.get(), self.grade.get())
         account.set_email(self.email.get())
-        if not account.set_passwd(self.pw.get()):  # 비밀번호 유효성 검사
+        password = hashlib.md5(self.pw.get().encode('utf-8')).hexdigest()
+        if not account.set_passwd(password):  # 비밀번호 유효성 검사
             messagebox.showerror("Error", "PassWord must be longer than 8")
         else:
             flag = account.sign_up()
@@ -369,7 +373,8 @@ class LoginPage(tk.Frame):  # tk.Frame객체를 상속받은 LoginPage객체
         else:
             account = student(self.name.get(), self.grade.get())
         account.set_email(self.email.get())
-        if not account.set_passwd(self.pw.get()):  # 비밀번호 유효성 검사
+        password = hashlib.md5(self.pw.get().encode('utf-8')).hexdigest()
+        if not account.set_passwd(password):  # 비밀번호 유효성 검사
             messagebox.showerror("Error", "PassWord must be longer than 8")
         else:
             flag = account.sign_in()
@@ -466,6 +471,11 @@ class ListPage(tk.Frame):  # tk.Frame객체를 상속한 ListPage객체
 
     def go_action(self, controller, account):  # 방 참가 + 창 이동 메서드
         host = self.listNodes.get(self.listNodes.curselection()[0])
+        pre_hostname = db.child("room").child(host).get().val()['host']
+        if pre_hostname != host:
+            messagebox.showinfo("Error", "It's not available room!\nPlease refresh the room list!")
+            return
+        db.child("room").child(host).update({"host": account.get_user().uid})
         db.child("chat").child(host + "+" + account.get_user().uid).set(
             {"chat_count": 1, "exist_": 2})  # 채팅 기본값 데이터베이스에 저장
         db.child("chat").child(host + "+" + account.get_user().uid).child("messages").child(0).set({"number": 0,
@@ -474,7 +484,6 @@ class ListPage(tk.Frame):  # tk.Frame객체를 상속한 ListPage객체
                                                                                                             '%Y-%m-%d %H:%M:%S'),
                                                                                                         "from": "public",
                                                                                                         "message": "----- The Chat Starts -----"}})  # 첫 공식 채팅 데이터베이스에 저장
-        db.child("room").child(host).update({"host": account.get_user().uid})
         controller.ChatPage_frame_init(account, host + "+" + account.get_user().uid)
         controller.show_frame(ChatPage)
 
@@ -536,7 +545,7 @@ class ChatPage(tk.Frame):  # tk.Frame객체를 상속한 ChatPage
             lambda x: self.stream_handler(x, account=account))  # 스트림 핸들러 (데이터베이스에서 바뀐 값을 실시간으로 감지)
 
         scrollbar = tk.Scrollbar(self, orient="vertical")
-        scrollbar.pack(side=tk.LEFT, fill=tk.Y)
+        scrollbar.pack(side="left", fill=tk.Y)
         self.listNodes = tk.Listbox(self, width=100, height=20, yscrollcommand=scrollbar.set, font=Font)  # 채팅 리스트
         self.listNodes.configure(exportselection=False, yscrollcommand=scrollbar.set)
         self.listNodes.pack(padx=10, pady=10)

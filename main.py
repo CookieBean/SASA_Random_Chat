@@ -601,6 +601,26 @@ class ChatPage(tk.Frame):  # tk.Frame객체를 상속한 ChatPage
                             command=lambda: self.send_chat(account, roomname), highlightbackground='#3E4149')  # 전송버튼
         button1.pack()
 
+    def report_newwindow(self):
+        report_window = tk.Toplevel(app)
+        report_window.geometry("300x500")
+        report_window.resizable(0, 0)
+
+        report_reasons = ["육설 및 비방", "모욕감을 주는 언행", "혐오표현 및 비하발언 사용", "음란물 유포", "상기 내용에 포함되지 않으나, 뚜렷이 제재가 필요한 경우"]
+        Check_var = [tk.IntVar() for i in report_reasons]
+
+        c0 = tk.Checkbutton(report_window, text=report_reasons[0], variable=Check_var[0])
+        c1 = tk.Checkbutton(report_window, text=report_reasons[1], variable=Check_var[1])
+        c2 = tk.Checkbutton(report_window, text=report_reasons[2], variable=Check_var[2])
+        c3 = tk.Checkbutton(report_window, text=report_reasons[3], variable=Check_var[3])
+        c4 = tk.Checkbutton(report_window, text=report_reasons[4], variable=Check_var[4])
+
+        c0.pack()
+        c1.pack()
+        c2.pack()
+        c3.pack()
+        c4.pack()
+
     def report_action(self, account, roomname):  # 신고 메서드
         DB = firebase.database()
         l = roomname.split("+")
